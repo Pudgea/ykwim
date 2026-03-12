@@ -19,12 +19,20 @@
         </div>
         <div class="m-test">
             <div class="mt-side">
-                <div class="mts-head">
+                <div class="mts-head" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                  <img src="https://avatars.mds.yandex.net/i?id=d089d2cb386947a18e97874f051befc79e0417fe-10649741-images-thumbs&n=13" alt="profile" style="width: 100px; height: 100px;   border: 2px solid #c4c4c4; border-radius: 5px; background-color: #bababb;">
                     <h1><b>ТЕСТ</b></h1>
                     <p>АКТИВЕН</p>
                 </div>
-                <div class="mts-main">
-                    <p>ПМ05 - Проверка работоспособности рефакторинга программного кода</p>
+                <div class="mts-main" style="overflow: hidden">
+                    <p>ПРОГРАММИРОВАНИЕ ЦИФРОВЫХ УСТРОЙСТВ НА БАЗЕ МИКРОКОНТРОЛЛЕРОВ</p>
+                </div>
+                <div class="mts-main mts-main--hint" style="margin-top: 10px; padding: 10px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mts-main__icon" viewBox="0 0 16 16">
+                        <circle cx="8" cy="8" r="6.25"/>
+                        <path d="M8 7v4M8 5.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5z"/>
+                    </svg>
+                    <p>Ответив на все вопросы обязательно нажмите кнопку Завершить</p>
                 </div>
             </div>
             <div class="mt-main">
@@ -69,6 +77,14 @@
             </div>
             <div class="mt-q">
                 <div class="container" id="sidebar-questions"></div>
+                <div class="sidebar-pagination">
+                    <button type="button" class="sidebar-arrow sidebar-arrow--prev" id="sidebar-prev" aria-label="Предыдущие 20">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
+                    </button>
+                    <button type="button" class="sidebar-arrow sidebar-arrow--next" id="sidebar-next" aria-label="Следующие 20">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -227,28 +243,42 @@
         return questions;
       }
 
+      const SIDEBAR_PAGE_SIZE = 20;
       let questionsData = [];
       let allQuestionsForModal = [];
       let userAnswers = {};
       let currentIndex = 0;
+      let sidebarPage = 0;
+
+      function getSidebarPageCount() {
+        return Math.ceil(questionsData.length / SIDEBAR_PAGE_SIZE) || 1;
+      }
 
       function renderSidebar() {
         const container = document.getElementById('sidebar-questions');
         if (!container) return;
+        const start = sidebarPage * SIDEBAR_PAGE_SIZE;
+        const end = Math.min(start + SIDEBAR_PAGE_SIZE, questionsData.length);
         container.innerHTML = '';
-        questionsData.forEach((q, i) => {
+        for (let i = start; i < end; i++) {
           const div = document.createElement('div');
-          div.className = 'mtq-q' + (i === 0 ? ' active' : '');
+          div.className = 'mtq-q' + (i === currentIndex ? ' active' : '');
           div.dataset.index = i;
           div.innerHTML = '<p>' + (i + 1) + '.</p><p>A</p><p>B</p><p>C</p><p>D</p><p>E</p>';
           container.appendChild(div);
-        });
+        }
+        const prevBtn = document.getElementById('sidebar-prev');
+        const nextBtn = document.getElementById('sidebar-next');
+        if (prevBtn) prevBtn.disabled = sidebarPage <= 0;
+        if (nextBtn) nextBtn.disabled = sidebarPage >= getSidebarPageCount() - 1;
       }
 
       function updateSidebarSelection() {
-        document.querySelectorAll('.mtq-q').forEach((el, i) => {
+        document.querySelectorAll('.mtq-q').forEach((el) => {
+          const i = parseInt(el.dataset.index, 10);
           const letter = userAnswers[i] || '';
           el.setAttribute('data-selected', letter);
+          el.classList.toggle('active', i === currentIndex);
           const ps = el.querySelectorAll('p');
           if (ps.length >= 6) {
             for (let k = 1; k <= 5; k++) {
@@ -283,10 +313,16 @@
             answersContainer.appendChild(answ);
           });
         }
-        document.querySelectorAll('.mtq-q').forEach((el, i) => {
-          el.classList.toggle('active', i === index);
-        });
-        updateSidebarSelection();
+        const newPage = Math.floor(index / SIDEBAR_PAGE_SIZE);
+        if (newPage !== sidebarPage) {
+          sidebarPage = newPage;
+          renderSidebar();
+        } else {
+          document.querySelectorAll('.mtq-q').forEach((el) => {
+            el.classList.toggle('active', parseInt(el.dataset.index, 10) === index);
+          });
+          updateSidebarSelection();
+        }
       }
 
       function openModal() {
@@ -364,6 +400,21 @@
             }
           });
         }
+
+        document.getElementById('sidebar-prev')?.addEventListener('click', () => {
+          if (sidebarPage > 0) {
+            sidebarPage--;
+            renderSidebar();
+            updateSidebarSelection();
+          }
+        });
+        document.getElementById('sidebar-next')?.addEventListener('click', () => {
+          if (sidebarPage < getSidebarPageCount() - 1) {
+            sidebarPage++;
+            renderSidebar();
+            updateSidebarSelection();
+          }
+        });
       });
     })();
   </script>
